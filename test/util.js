@@ -38,5 +38,5 @@ module.exports = {
   testServer,
   request,
   DEFAULT_COOKIE,
-  DEFAULT_OPTIONS
+  DEFAULT_OPTIONS,
 }

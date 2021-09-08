@@ -90,6 +90,10 @@ Setting this to `false` can be useful to save storage space and to comply with t
 
 Function used to generate new session IDs. Defaults to [`uid(24)`](https://github.com/crypto-utils/uid-safe).
 
+##### expressCompat (optional)
+
+Adds express-session compatibility
+
 #### request.session
 
 Allows to access or modify the session data.

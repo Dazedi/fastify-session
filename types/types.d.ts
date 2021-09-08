@@ -64,6 +64,12 @@ declare namespace FastifySessionPlugin {
      * Defaults to true. Setting this to false can be useful to save storage space and to comply with the EU cookie law.
      */
     saveUninitialized?: boolean;
+    /**
+     * Express compatibility setting
+     * Defaults to false. Setting this to true, will add s: similarly to express-session so they are
+     * compatible with each other
+     */
+    expressCompat?: boolean;
   }
 
   interface CookieOptions {

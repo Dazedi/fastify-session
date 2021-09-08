@@ -1,9 +1,10 @@
 {
-  "name": "fastify-session",
-  "version": "5.2.1",
+  "name": "@dazedi/fastify-session",
+  "version": "5.2.7",
   "description": "a session plugin for fastify",
   "main": "lib/fastifySession.js",
   "scripts": {
+    "unit:base": "ava test/base.test.js",
     "unit": "ava test/*.test.js",
     "tsc-check": "tsc --project ./types/tsconfig.json --noEmit",
     "test": "npm run lint && npm run unit && npm run tsc-check",

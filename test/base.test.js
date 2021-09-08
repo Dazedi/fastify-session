@@ -2,7 +2,7 @@
 
 const test = require('ava')
 const fastifyPlugin = require('fastify-plugin')
-const { testServer, request, DEFAULT_OPTIONS, DEFAULT_COOKIE } = require('./util')
+const { testServer, request, DEFAULT_OPTIONS, DEFAULT_COOKIE, TIMEOUT_OPTIONS } = require('./util')
 
 test('should set session cookie on post without params', async (t) => {
   t.plan(1)
@@ -290,4 +290,94 @@ test('should not set session cookie if no data in session and saveUninitialized 
 
   t.is(response.statusCode, 200)
   t.true(response.headers['set-cookie'] === undefined)
+})
+
+test('session from express should stay intact', async (t) => {
+  t.plan(3)
+  const EXPRESS_COOKIE = "sessionId=s%3A6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4.%2BV2zopUz3VMVCmJpZP6qu8BhOo7J4%2FnU9VznfWPhC0I; Path=/; Expires=Wed, 08 Sep 2021 10:18:44 GMT; HttpOnly; SameSite=Lax";
+  const plugin = fastifyPlugin(async (fastify, opts) => {
+    fastify.addHook('preValidation', (request, reply, done) => {
+      request.sessionStore.set('6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4', {
+        cookie: { // express session contents
+          path: '/',
+          _expires: new Date(Date.now() + 60), // minute
+          originalMaxAge: 3600000,
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax'
+        }
+      }, done)
+    })
+  })
+  function handler (request, reply) {
+    reply.send(200)
+  }
+  const options = {
+    secret: 'cNaoPYAwF60HZJzkcNaoPYAwF60HZJzk',
+    cookie: { 
+      maxAge: 3600000,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+    },
+    expressCompat: true,
+  }
+  const port = await testServer(handler, options, plugin)
+
+  const { statusCode, cookie } = await request({
+    url: `http://localhost:${port}`,
+    headers: {
+      cookie: EXPRESS_COOKIE,
+      'x-forwarded-proto': 'https'
+    }
+  })
+
+  t.is(statusCode, 200)
+  t.true(cookie.includes('6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4'))
+  t.true(cookie.includes('Expires'))
+})
+
+test('should create new session since express session is old', async (t) => {
+  t.plan(3)
+  const EXPRESS_COOKIE = "sessionId=s%3A6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4.%2BV2zopUz3VMVCmJpZP6qu8BhOo7J4%2FnU9VznfWPhC0I; Path=/; Expires=Wed, 08 Sep 2021 10:18:44 GMT; HttpOnly; SameSite=Lax";
+  const plugin = fastifyPlugin(async (fastify, opts) => {
+    fastify.addHook('preValidation', (request, reply, done) => {
+      request.sessionStore.set('6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4', {
+        cookie: { // express session contents
+          path: '/',
+          _expires: new Date(Date.now() - 1000), // minute
+          originalMaxAge: 3600000,
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax'
+        }
+      }, done)
+    })
+  })
+  function handler (request, reply) {
+    reply.send(200)
+  }
+  const options = {
+    secret: 'cNaoPYAwF60HZJzkcNaoPYAwF60HZJzk',
+    cookie: { 
+      maxAge: 3600000,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+    },
+    expressCompat: true,
+  }
+  const port = await testServer(handler, options, plugin)
+
+  const { statusCode, cookie } = await request({
+    url: `http://localhost:${port}`,
+    headers: {
+      cookie: EXPRESS_COOKIE,
+      'x-forwarded-proto': 'https'
+    }
+  })
+
+  t.is(statusCode, 200)
+  t.false(cookie.includes('6x2gHIV9xL7RA3yYDNUR9zigsJINYJR4'))
+  t.true(cookie.includes('Expires'))
 })
